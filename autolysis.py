@@ -6,33 +6,27 @@ from sklearn.ensemble import IsolationForest
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 import requests
-from google.colab import files
 
-# OpenAI Token Setup (set your token manually here)
-AIPROXY_TOKEN = "your_aiproxy_token_here"  # Replace with your actual AIPROXY_TOKEN
+# === Predefined Inputs ===
+AIPROXY_TOKEN = "your_aiproxy_token_here"  # Replace with your actual OpenAI token
+CSV_FILE_PATH = "path_to_your_csv_file.csv"  # Replace with the full path to your CSV file
 
-# Upload file from your local system
-print("Please upload the CSV file:")
-uploaded = files.upload()
+# Validate inputs
+if not os.path.exists(CSV_FILE_PATH):
+    raise FileNotFoundError(f"The specified file does not exist: {CSV_FILE_PATH}")
 
-# Get the filename
-filename = next(iter(uploaded))  # Get the first (and in this case, only) uploaded file
+# Output directory setup
+filename = os.path.basename(CSV_FILE_PATH)
 out_dir = filename.split('.')[0]
 os.makedirs(out_dir, exist_ok=True)
 
 # Read the CSV file
 try:
-    # Try reading with UTF-8 first
-    data = pd.read_csv(filename, encoding="utf-8")
+    data = pd.read_csv(CSV_FILE_PATH, encoding="utf-8")
     print(f"Successfully loaded {filename} with UTF-8 encoding")
 except UnicodeDecodeError:
-    # Fallback to ISO-8859-1 if UTF-8 fails
-    try:
-        data = pd.read_csv(filename, encoding="ISO-8859-1")
-        print(f"Successfully loaded {filename} with ISO-8859-1 encoding")
-    except Exception as e:
-        print(f"Error loading {filename}: {e}")
-        raise
+    data = pd.read_csv(CSV_FILE_PATH, encoding="ISO-8859-1")
+    print(f"Successfully loaded {filename} with ISO-8859-1 encoding")
 
 # Show basic info about the data
 print("Dataset Overview:")
@@ -41,8 +35,8 @@ print("First 5 Rows:")
 print(data.head())
 
 # Analyze missing values
-print("\nMissing Values:")
 missing_values = data.isnull().sum()
+print("\nMissing Values:")
 print(missing_values[missing_values > 0])
 
 # Handle missing values
@@ -55,12 +49,10 @@ for column in missing_values.index:
         data[column].fillna(data[column].mode()[0], inplace=True)
         print(f"Filled missing values in '{column}' with mode: {data[column].mode()[0]}")
 
-print("\nMissing values handled successfully!")
-
 # Correlation matrix for numerical columns
-print("\nCorrelation Matrix:")
 numerical_columns = data.select_dtypes(include=["float64", "int64"])  # Select only numeric columns
 correlation_matrix = numerical_columns.corr()
+print("\nCorrelation Matrix:")
 print(correlation_matrix)
 
 # Save the correlation heatmap as a PNG file
@@ -160,3 +152,4 @@ if response.status_code == 200:
     print(f"README.md generated and saved as '{out_dir}/README.md'")
 else:
     print(f"Error: {response.status_code}, {response.text}")
+
